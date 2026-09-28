@@ -1,0 +1,1116 @@
+<!DOCTYPE html>
+<html lang="en" class="dark h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bookmarks</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        chrome: {
+                            bg: '#202124',
+                            surface: '#292a2d',
+                            hover: '#35363a',
+                            selected: '#283e58',
+                            selectedText: '#8ab4f8',
+                            text: '#e8eaed',
+                            subtext: '#9aa0a6',
+                            border: '#3c4043',
+                            searchBg: '#28292c',
+                            blue: '#8ab4f8',
+                            blueHover: '#aecbfa'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #202124;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #4a4d51;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #5f6368;
+        }
+        .checkbox-custom:checked {
+            background-color: #8ab4f8;
+            border-color: #8ab4f8;
+        }
+        .checkbox-custom:checked::after {
+            content: '✓';
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #202124;
+            font-size: 10px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body class="bg-chrome-bg text-chrome-text h-full flex flex-col font-sans select-none overflow-hidden antialiased">
+
+    <header class="h-14 bg-chrome-bg border-b border-chrome-border flex items-center justify-between px-4 shrink-0 z-20">
+        <!-- Logo & Title -->
+        <div class="flex items-center space-x-3 w-56 shrink-0">
+            <div class="w-8 h-8 rounded-full flex items-center justify-center text-chrome-blue text-lg">
+                <i class="fa-solid fa-bookmark"></i>
+            </div>
+            <h1 class="text-lg font-medium text-chrome-text tracking-wide">Bookmarks</h1>
+        </div>
+
+        <!-- History Back / Forward Navigation Controls -->
+        <div class="flex items-center space-x-1 mr-3 shrink-0">
+            <button id="navBackBtn" disabled 
+                class="w-8 h-8 rounded-full hover:bg-chrome-hover disabled:opacity-30 disabled:hover:bg-transparent flex items-center justify-center text-chrome-text transition"
+                title="Back (Alt+Left)">
+                <i class="fa-solid fa-arrow-left text-sm"></i>
+            </button>
+            <button id="navForwardBtn" disabled 
+                class="w-8 h-8 rounded-full hover:bg-chrome-hover disabled:opacity-30 disabled:hover:bg-transparent flex items-center justify-center text-chrome-text transition"
+                title="Forward (Alt+Right)">
+                <i class="fa-solid fa-arrow-right text-sm"></i>
+            </button>
+        </div>
+
+        <!-- Global Search Input Bar -->
+        <div class="flex-1 max-w-2xl mx-2">
+            <div class="relative flex items-center">
+                <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-chrome-subtext">
+                    <i class="fa-solid fa-magnifying-glass text-sm"></i>
+                </div>
+                <input type="text" id="searchInput" 
+                    class="w-full bg-chrome-searchBg text-chrome-text placeholder-chrome-subtext text-sm rounded-full pl-10 pr-10 py-2 border border-transparent focus:border-chrome-blue focus:bg-chrome-surface focus:outline-none transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    placeholder="Search bookmarks" disabled>
+                <button id="clearSearchBtn" class="hidden absolute inset-y-0 right-0 pr-3 flex items-center text-chrome-subtext hover:text-chrome-text">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Header Actions -->
+        <div class="flex items-center space-x-2 shrink-0">
+            <label for="fileUpload" class="cursor-pointer bg-chrome-blue text-gray-950 font-medium hover:bg-chrome-blueHover text-sm px-4 py-1.5 rounded-full flex items-center space-x-2 transition shadow-sm">
+                <i class="fa-solid fa-file-import text-xs"></i>
+                <span>Import HTML</span>
+            </label>
+            <input type="file" id="fileUpload" accept=".html,.htm" class="hidden">
+
+            <div class="relative">
+                <button id="topMenuBtn" class="w-9 h-9 rounded-full hover:bg-chrome-hover flex items-center justify-center text-chrome-subtext hover:text-chrome-text transition">
+                    <i class="fa-solid fa-ellipsis-vertical"></i>
+                </button>
+                <div id="topDropdown" class="hidden absolute right-0 mt-1 w-48 bg-chrome-surface rounded-md shadow-2xl border border-chrome-border py-1 z-50">
+                    <button id="clearDataBtn" class="w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-chrome-hover flex items-center space-x-2">
+                        <i class="fa-solid fa-trash-can text-red-400 w-4"></i>
+                        <span>Clear bookmark data</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Multi-Selection Contextual Toolbar -->
+    <div id="selectionBar" class="hidden h-12 bg-chrome-selected px-6 flex items-center justify-between border-b border-chrome-border z-10 transition-all">
+        <div class="flex items-center space-x-4">
+            <button id="clearSelectionBtn" class="text-chrome-subtext hover:text-chrome-text text-sm flex items-center space-x-1" title="Clear Selection">
+                <i class="fa-solid fa-xmark text-base"></i>
+            </button>
+            <span id="selectedCountText" class="text-sm font-medium text-chrome-selectedText">0 selected</span>
+        </div>
+        <div class="flex items-center space-x-3">
+            <button id="batchOpenSelectedBtn" class="text-xs bg-chrome-blue/20 text-chrome-blue border border-chrome-blue/30 px-3 py-1.5 rounded hover:bg-chrome-blue/30 transition flex items-center space-x-1.5">
+                <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                <span>Open Selected Links</span>
+            </button>
+            <button id="batchDeleteBtn" class="text-xs bg-red-500/20 text-red-400 border border-red-500/30 px-3 py-1.5 rounded hover:bg-red-500/30 transition flex items-center space-x-1.5">
+                <i class="fa-solid fa-trash"></i>
+                <span>Delete Selected</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="flex-1 flex overflow-hidden">
+
+        <!-- Sidebar Navigation Tree -->
+        <aside class="w-64 bg-chrome-bg border-r border-chrome-border flex flex-col shrink-0 overflow-y-auto p-2">
+            <div id="sidebarTree" class="space-y-0.5"></div>
+        </aside>
+
+        <!-- Main Content View -->
+        <main class="flex-1 bg-chrome-bg overflow-y-auto p-6 flex flex-col">
+            <div class="max-w-4xl mx-auto w-full flex-1 flex flex-col">
+                
+                <!-- Folder Header Area & Batch Selection Controls -->
+                <div id="folderHeaderArea" class="hidden flex items-center justify-between mb-4">
+                    <div>
+                        <div id="currentFolderPath" class="text-xs text-chrome-subtext font-medium flex items-center space-x-1 mb-1"></div>
+                        <h2 id="currentFolderName" class="text-xl font-semibold text-chrome-text"></h2>
+                    </div>
+
+                    <div class="flex items-center space-x-2">
+                        <!-- Quick Selection Dropdown Button -->
+                        <div class="relative">
+                            <button id="selectHelperMenuBtn" class="bg-chrome-surface border border-chrome-border hover:bg-chrome-hover text-chrome-text text-xs font-medium px-3 py-2 rounded-md flex items-center space-x-2 transition shadow-sm">
+                                <i class="fa-solid fa-check-square text-chrome-blue"></i>
+                                <span>Select...</span>
+                                <i class="fa-solid fa-chevron-down text-[10px] text-chrome-subtext"></i>
+                            </button>
+                            <div id="selectHelperDropdown" class="hidden absolute right-0 mt-1 w-48 bg-chrome-surface rounded-md shadow-2xl border border-chrome-border py-1 z-50">
+                                <button id="selectAllItemsBtn" class="w-full text-left px-4 py-2 text-xs text-chrome-text hover:bg-chrome-hover flex items-center space-x-2">
+                                    <i class="fa-solid fa-square-check text-chrome-blue w-4"></i>
+                                    <span>Select All Items</span>
+                                </button>
+                                <button id="selectAllLinksBtn" class="w-full text-left px-4 py-2 text-xs text-chrome-text hover:bg-chrome-hover flex items-center space-x-2">
+                                    <i class="fa-solid fa-link text-chrome-blue w-4"></i>
+                                    <span>Select Direct Links</span>
+                                </button>
+                                <button id="selectAllFoldersBtn" class="w-full text-left px-4 py-2 text-xs text-chrome-text hover:bg-chrome-hover flex items-center space-x-2">
+                                    <i class="fa-solid fa-folder text-chrome-blue w-4"></i>
+                                    <span>Select Subfolders</span>
+                                </button>
+                                <hr class="border-chrome-border my-1">
+                                <button id="deselectAllBtn" class="w-full text-left px-4 py-2 text-xs text-chrome-subtext hover:bg-chrome-hover flex items-center space-x-2">
+                                    <i class="fa-solid fa-square text-chrome-subtext w-4"></i>
+                                    <span>Deselect All</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Open All Links in Folder in New Window Button -->
+                        <button id="openFolderLinksCustomBtn" class="bg-chrome-surface border border-chrome-border hover:bg-chrome-hover text-chrome-blue text-xs font-medium px-3.5 py-2 rounded-md flex items-center space-x-2 transition shadow-sm" title="Opens this web app in a new separate window with loaded bookmarks, and all direct links in tabs">
+                            <i class="fa-solid fa-window-restore text-chrome-blue"></i>
+                            <span>Open folder in new window</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="searchResultsCount" class="text-xs text-chrome-subtext hidden mb-3"></div>
+
+                <!-- Bookmark Cards List -->
+                <div id="contentContainer" class="bg-chrome-surface rounded-lg border border-chrome-border overflow-hidden shadow-sm flex-1">
+                    <!-- Cards rendered dynamically -->
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Context Menu -->
+    <div id="contextMenu" class="hidden fixed bg-chrome-surface rounded-md shadow-2xl border border-chrome-border py-1 z-50 min-w-[210px]">
+        <button id="ctxOpenAllNewWin" class="w-full text-left px-4 py-2 text-sm text-chrome-text hover:bg-chrome-hover flex items-center space-x-2.5">
+            <i class="fa-solid fa-window-restore text-chrome-blue w-4"></i>
+            <span>Open all in new window</span>
+        </button>
+        <button id="ctxEdit" class="w-full text-left px-4 py-2 text-sm text-chrome-text hover:bg-chrome-hover flex items-center space-x-2.5">
+            <i class="fa-solid fa-pen text-chrome-subtext w-4"></i>
+            <span>Edit</span>
+        </button>
+        <button id="ctxDelete" class="w-full text-left px-4 py-2 text-sm text-chrome-text hover:bg-chrome-hover flex items-center space-x-2.5">
+            <i class="fa-solid fa-trash text-chrome-subtext w-4"></i>
+            <span>Delete</span>
+        </button>
+    </div>
+
+    <!-- Edit Modal -->
+    <div id="editModal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
+        <div class="bg-chrome-surface border border-chrome-border rounded-lg p-6 w-full max-w-md shadow-2xl">
+            <h3 id="modalTitle" class="text-lg font-medium text-chrome-text mb-4">Edit Item</h3>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs text-chrome-subtext mb-1">Name</label>
+                    <input type="text" id="editNameInput" class="w-full bg-chrome-bg border border-chrome-border rounded px-3 py-2 text-sm text-chrome-text focus:outline-none focus:border-chrome-blue">
+                </div>
+                <div id="urlFieldGroup">
+                    <label class="block text-xs text-chrome-subtext mb-1">URL</label>
+                    <input type="text" id="editUrlInput" class="w-full bg-chrome-bg border border-chrome-border rounded px-3 py-2 text-sm text-chrome-text focus:outline-none focus:border-chrome-blue">
+                </div>
+            </div>
+            <div class="mt-6 flex justify-end space-x-3">
+                <button id="cancelEditBtn" class="px-4 py-2 text-sm font-medium text-chrome-subtext hover:text-chrome-text hover:bg-chrome-hover rounded transition">Cancel</button>
+                <button id="saveEditBtn" class="px-4 py-2 text-sm font-medium bg-chrome-blue text-gray-950 hover:bg-chrome-blueHover rounded transition">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pop-up Notice Modal -->
+    <div id="popupNoticeModal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50">
+        <div class="bg-chrome-surface border border-chrome-border rounded-lg p-6 w-full max-w-lg shadow-2xl space-y-4">
+            <div class="flex items-center space-x-3 text-amber-400">
+                <i class="fa-solid fa-triangle-exclamation text-2xl"></i>
+                <h3 class="text-lg font-semibold">Opening Folder in New Window</h3>
+            </div>
+            <p class="text-sm text-chrome-text leading-relaxed">
+                This app will now open in a separate standalone window with your persisted bookmarks, and all direct links in this folder will open in tabs.
+            </p>
+            <div class="bg-chrome-bg p-3 rounded border border-chrome-border text-xs text-chrome-subtext space-y-1">
+                <p class="font-semibold text-chrome-text">If pop-ups are blocked:</p>
+                <p>1. Check your browser address bar for the blocked pop-up icon.</p>
+                <p>2. Select "Always allow pop-ups and redirects from this site".</p>
+            </div>
+            <div class="flex justify-end pt-2">
+                <button id="confirmPopupNoticeBtn" class="px-4 py-2 bg-chrome-blue text-gray-950 text-sm font-medium rounded hover:bg-chrome-blueHover transition">Proceed</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-6 right-6 bg-chrome-surface border border-chrome-border text-chrome-text px-4 py-3 rounded-lg shadow-2xl transform translate-y-20 opacity-0 transition-all duration-300 flex items-center space-x-3 z-50">
+        <i id="toastIcon" class="fa-solid fa-circle-info text-chrome-blue"></i>
+        <span id="toastMsg" class="text-sm"></span>
+    </div>
+
+    <script>
+        const STORAGE_KEY = 'chrome_bookmarks_data';
+
+        // State Variables
+        let bookmarkData = null;
+        let selectedFolderId = null;
+        let searchQuery = '';
+        let contextTargetItem = null;
+        let selectedItemIds = new Set();
+        let actionFolderTarget = null;
+
+        // Navigation History Stack (Back/Forward <- ->)
+        let historyStack = [];
+        let historyIndex = -1;
+        let isNavigatingHistory = false;
+
+        function generateId() {
+            return 'id_' + Math.random().toString(36).substr(2, 9);
+        }
+
+        function showToast(message, isError = false) {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toastMsg');
+            const toastIcon = document.getElementById('toastIcon');
+
+            toastMsg.textContent = message;
+            toastIcon.className = isError ? "fa-solid fa-triangle-exclamation text-red-400" : "fa-solid fa-circle-info text-chrome-blue";
+            
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3500);
+        }
+
+        // Persistence Helpers
+        function saveToLocalStorage() {
+            try {
+                if (bookmarkData) {
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(bookmarkData));
+                } else {
+                    localStorage.removeItem(STORAGE_KEY);
+                }
+            } catch (e) {
+                console.error("Failed to save to localStorage", e);
+            }
+        }
+
+        function loadFromLocalStorage() {
+            try {
+                const stored = localStorage.getItem(STORAGE_KEY);
+                if (stored) {
+                    return JSON.parse(stored);
+                }
+            } catch (e) {
+                console.error("Failed to parse localStorage data", e);
+            }
+            return null;
+        }
+
+        // History Stack Management (<- / ->)
+        function pushHistory(folderId) {
+            if (!folderId || isNavigatingHistory) return;
+            if (historyIndex >= 0 && historyStack[historyIndex] === folderId) return;
+
+            historyStack = historyStack.slice(0, historyIndex + 1);
+            historyStack.push(folderId);
+            historyIndex = historyStack.length - 1;
+            updateHistoryUI();
+        }
+
+        function navigateBack() {
+            if (historyIndex > 0) {
+                isNavigatingHistory = true;
+                historyIndex--;
+                selectedFolderId = historyStack[historyIndex];
+                selectedItemIds.clear();
+                renderApp();
+                isNavigatingHistory = false;
+                updateHistoryUI();
+            }
+        }
+
+        function navigateForward() {
+            if (historyIndex < historyStack.length - 1) {
+                isNavigatingHistory = true;
+                historyIndex++;
+                selectedFolderId = historyStack[historyIndex];
+                selectedItemIds.clear();
+                renderApp();
+                isNavigatingHistory = false;
+                updateHistoryUI();
+            }
+        }
+
+        function updateHistoryUI() {
+            const backBtn = document.getElementById('navBackBtn');
+            const forwardBtn = document.getElementById('navForwardBtn');
+
+            backBtn.disabled = historyIndex <= 0;
+            forwardBtn.disabled = historyIndex >= historyStack.length - 1;
+        }
+
+        function findItemById(node, id) {
+            if (!node) return null;
+            if (node.id === id) return node;
+            if (node.children) {
+                for (let child of node.children) {
+                    const found = findItemById(child, id);
+                    if (found) return found;
+                }
+            }
+            return null;
+        }
+
+        function findParentFolder(node, targetId, parent = null) {
+            if (!node) return null;
+            if (node.id === targetId) return parent;
+            if (node.children) {
+                for (let child of node.children) {
+                    const found = findParentFolder(child, targetId, node);
+                    if (found) return found;
+                }
+            }
+            return null;
+        }
+
+        function getFaviconUrl(url) {
+            if (!url) return '';
+            try {
+                const domain = new URL(url).hostname;
+                return `https://www.google.com/s2/favicons?domain=${domain}&sz=32`;
+            } catch (e) {
+                return '';
+            }
+        }
+
+        function parseBookmarkHTML(htmlText) {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(htmlText, 'text/html');
+            
+            function processNode(element) {
+                const results = [];
+                const dls = element.querySelectorAll(':scope > dl, :scope > p > dl, :scope > dl > p');
+                const dlsToProcess = dls.length > 0 ? dls : [element];
+
+                dlsToProcess.forEach(dl => {
+                    const children = Array.from(dl.children);
+                    for (let i = 0; i < children.length; i++) {
+                        const child = children[i];
+                        if (child.tagName === 'DT') {
+                            const h3 = child.querySelector(':scope > h3');
+                            const a = child.querySelector(':scope > a');
+
+                            if (h3) {
+                                const folderName = h3.textContent.trim();
+                                const subDl = child.querySelector(':scope > dl');
+                                const folderObj = {
+                                    id: generateId(),
+                                    title: folderName,
+                                    isFolder: true,
+                                    expanded: true,
+                                    children: subDl ? processNode(subDl) : []
+                                };
+                                results.push(folderObj);
+                            } else if (a) {
+                                results.push({
+                                    id: generateId(),
+                                    title: a.textContent.trim() || a.href,
+                                    url: a.href,
+                                    isFolder: false
+                                });
+                            }
+                        }
+                    }
+                });
+                return results;
+            }
+
+            const parsedTree = {
+                id: 'root',
+                title: 'Root',
+                children: []
+            };
+
+            const rootDl = doc.querySelector('dl');
+            if (rootDl) {
+                parsedTree.children = processNode(rootDl);
+            }
+
+            return parsedTree;
+        }
+
+        function renderSidebar() {
+            const container = document.getElementById('sidebarTree');
+            container.innerHTML = '';
+
+            if (!bookmarkData || !bookmarkData.children || bookmarkData.children.length === 0) {
+                return;
+            }
+
+            function createTreeNode(item, level = 0) {
+                if (!item.isFolder) return null;
+
+                const isSelected = item.id === selectedFolderId;
+                const nodeDiv = document.createElement('div');
+                nodeDiv.className = 'flex flex-col';
+
+                const rowDiv = document.createElement('div');
+                rowDiv.className = `flex items-center space-x-2 px-2 py-1.5 rounded-r-full cursor-pointer text-sm transition-colors group ${
+                    isSelected ? 'bg-chrome-selected text-chrome-selectedText font-medium' : 'hover:bg-chrome-hover text-chrome-text'
+                }`;
+                rowDiv.style.paddingLeft = `${level * 12 + 12}px`;
+
+                const hasChildrenFolders = item.children && item.children.some(c => c.isFolder);
+                const caretBtn = document.createElement('button');
+                caretBtn.className = `w-4 h-4 flex items-center justify-center text-chrome-subtext hover:text-chrome-text ${!hasChildrenFolders ? 'invisible' : ''}`;
+                
+                const isExpanded = item.expanded !== false;
+                caretBtn.innerHTML = `<i class="fa-solid fa-caret-right text-xs transform transition-transform ${isExpanded ? 'rotate-90' : ''}"></i>`;
+                
+                caretBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    item.expanded = !isExpanded;
+                    saveToLocalStorage();
+                    renderSidebar();
+                };
+
+                const folderIcon = document.createElement('i');
+                folderIcon.className = `fa-solid fa-folder ${isSelected ? 'text-chrome-selectedText' : 'text-chrome-subtext'}`;
+
+                const titleSpan = document.createElement('span');
+                titleSpan.className = 'truncate flex-1';
+                titleSpan.textContent = item.title;
+
+                rowDiv.appendChild(caretBtn);
+                rowDiv.appendChild(folderIcon);
+                rowDiv.appendChild(titleSpan);
+
+                rowDiv.onclick = () => {
+                    selectedFolderId = item.id;
+                    searchQuery = '';
+                    document.getElementById('searchInput').value = '';
+                    document.getElementById('clearSearchBtn').classList.add('hidden');
+                    selectedItemIds.clear();
+                    pushHistory(selectedFolderId);
+                    renderApp();
+                };
+
+                nodeDiv.appendChild(rowDiv);
+
+                if (hasChildrenFolders && isExpanded) {
+                    const childrenContainer = document.createElement('div');
+                    item.children.forEach(child => {
+                        if (child.isFolder) {
+                            const childNode = createTreeNode(child, level + 1);
+                            if (childNode) childrenContainer.appendChild(childNode);
+                        }
+                    });
+                    nodeDiv.appendChild(childrenContainer);
+                }
+
+                return nodeDiv;
+            }
+
+            bookmarkData.children.forEach(child => {
+                const node = createTreeNode(child, 0);
+                if (node) container.appendChild(node);
+            });
+        }
+
+        function renderMainContent() {
+            const container = document.getElementById('contentContainer');
+            const breadcrumbContainer = document.getElementById('currentFolderPath');
+            const folderHeaderArea = document.getElementById('folderHeaderArea');
+            const currentFolderName = document.getElementById('currentFolderName');
+            const searchCountEl = document.getElementById('searchResultsCount');
+            const searchInput = document.getElementById('searchInput');
+
+            container.innerHTML = '';
+            breadcrumbContainer.innerHTML = '';
+
+            if (!bookmarkData || !bookmarkData.children || bookmarkData.children.length === 0) {
+                searchInput.disabled = true;
+                searchCountEl.classList.add('hidden');
+                folderHeaderArea.classList.add('hidden');
+                
+                container.innerHTML = `
+                    <div class="p-12 flex flex-col items-center justify-center text-center space-y-4 h-full">
+                        <div class="w-16 h-16 rounded-full bg-chrome-hover flex items-center justify-center text-chrome-blue text-2xl mb-2">
+                            <i class="fa-solid fa-file-arrow-up"></i>
+                        </div>
+                        <h2 class="text-lg font-medium text-chrome-text">No Bookmarks Loaded</h2>
+                        <p class="text-sm text-chrome-subtext max-w-md">
+                            Upload your exported HTML bookmarks file or select one to load. All bookmarks will persist across windows.
+                        </p>
+                        <label for="fileUpload" class="mt-2 cursor-pointer bg-chrome-blue text-gray-950 font-medium hover:bg-chrome-blueHover text-sm px-4 py-2 rounded-md flex items-center space-x-2 transition shadow">
+                            <i class="fa-solid fa-upload"></i>
+                            <span>Choose Bookmarks File</span>
+                        </label>
+                    </div>
+                `;
+                return;
+            }
+
+            searchInput.disabled = false;
+
+            // Search Filter Mode
+            if (searchQuery.trim() !== '') {
+                folderHeaderArea.classList.add('hidden');
+                searchCountEl.classList.remove('hidden');
+                
+                const searchResults = [];
+                function searchRecursive(node) {
+                    if (node.title && node.title.toLowerCase().includes(searchQuery.toLowerCase())) {
+                        if (node.id !== 'root') searchResults.push(node);
+                    } else if (node.url && node.url.toLowerCase().includes(searchQuery.toLowerCase())) {
+                        searchResults.push(node);
+                    }
+                    if (node.children) {
+                        node.children.forEach(searchRecursive);
+                    }
+                }
+                searchRecursive(bookmarkData);
+
+                searchCountEl.textContent = `${searchResults.length} result(s) for "${searchQuery}"`;
+
+                if (searchResults.length === 0) {
+                    container.innerHTML = `<div class="p-8 text-center text-chrome-subtext text-sm">No matching bookmarks found.</div>`;
+                    return;
+                }
+
+                searchResults.forEach(item => {
+                    container.appendChild(createBookmarkCardRow(item));
+                });
+                return;
+            }
+
+            // Folder Mode
+            searchCountEl.classList.add('hidden');
+            folderHeaderArea.classList.remove('hidden');
+
+            let currentFolder = findItemById(bookmarkData, selectedFolderId);
+            if (!currentFolder) {
+                currentFolder = bookmarkData.children[0];
+                if (currentFolder) {
+                    selectedFolderId = currentFolder.id;
+                    pushHistory(selectedFolderId);
+                }
+            }
+
+            if (!currentFolder) return;
+
+            currentFolderName.textContent = currentFolder.title;
+
+            // Breadcrumb Navigation
+            const crumbs = [];
+            let temp = currentFolder;
+            while (temp && temp.id !== 'root') {
+                crumbs.unshift(temp);
+                temp = findParentFolder(bookmarkData, temp.id);
+            }
+
+            crumbs.forEach((crumb, idx) => {
+                const span = document.createElement('span');
+                span.className = idx === crumbs.length - 1 ? 'text-chrome-text font-medium' : 'hover:underline cursor-pointer';
+                span.textContent = crumb.title;
+                if (idx < crumbs.length - 1) {
+                    span.onclick = () => {
+                        selectedFolderId = crumb.id;
+                        selectedItemIds.clear();
+                        pushHistory(selectedFolderId);
+                        renderApp();
+                    };
+                }
+                breadcrumbContainer.appendChild(span);
+                if (idx < crumbs.length - 1) {
+                    const sep = document.createElement('span');
+                    sep.className = 'mx-1 text-chrome-subtext';
+                    sep.textContent = '/';
+                    breadcrumbContainer.appendChild(sep);
+                }
+            });
+
+            if (!currentFolder.children || currentFolder.children.length === 0) {
+                container.innerHTML = `<div class="p-8 text-center text-chrome-subtext text-sm">This folder is empty.</div>`;
+                return;
+            }
+
+            currentFolder.children.forEach(item => {
+                container.appendChild(createBookmarkCardRow(item));
+            });
+
+            updateSelectionBarUI();
+        }
+
+        function createBookmarkCardRow(item) {
+            const isChecked = selectedItemIds.has(item.id);
+            const row = document.createElement('div');
+            row.className = `flex items-center justify-between px-4 py-3 border-b border-chrome-border/50 last:border-b-0 cursor-pointer group transition-colors ${
+                isChecked ? 'bg-chrome-selected/60 hover:bg-chrome-selected' : 'hover:bg-chrome-hover'
+            }`;
+
+            const leftSection = document.createElement('div');
+            leftSection.className = 'flex items-center space-x-3 flex-1 min-w-0 pr-4';
+
+            // Custom Checkbox
+            const checkboxContainer = document.createElement('div');
+            checkboxContainer.className = 'flex items-center justify-center shrink-0 pr-1';
+            
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.checked = isChecked;
+            checkbox.className = 'w-4 h-4 rounded border-chrome-subtext/60 bg-transparent text-chrome-blue focus:ring-0 cursor-pointer checkbox-custom appearance-none border border-chrome-subtext checked:border-chrome-blue transition-all';
+            
+            // Checkbox events with stopPropagation
+            checkbox.addEventListener('click', (e) => {
+                e.stopPropagation();
+            });
+            checkbox.addEventListener('change', (e) => {
+                e.stopPropagation();
+                toggleItemSelection(item.id);
+            });
+
+            checkboxContainer.appendChild(checkbox);
+
+            const iconDiv = document.createElement('div');
+            iconDiv.className = 'w-5 h-5 flex items-center justify-center shrink-0';
+
+            if (item.isFolder) {
+                iconDiv.innerHTML = '<i class="fa-solid fa-folder text-chrome-subtext"></i>';
+            } else {
+                const faviconUrl = getFaviconUrl(item.url);
+                const img = document.createElement('img');
+                img.src = faviconUrl;
+                img.className = 'w-4 h-4 rounded-sm';
+                img.onerror = () => {
+                    iconDiv.innerHTML = '<i class="fa-solid fa-globe text-chrome-subtext text-xs"></i>';
+                };
+                iconDiv.appendChild(img);
+            }
+
+            const textDiv = document.createElement('div');
+            textDiv.className = 'flex flex-col min-w-0';
+
+            const title = document.createElement('span');
+            title.className = 'text-sm text-chrome-text font-normal truncate';
+            title.textContent = item.title;
+
+            textDiv.appendChild(title);
+
+            leftSection.appendChild(checkboxContainer);
+            leftSection.appendChild(iconDiv);
+            leftSection.appendChild(textDiv);
+
+            const actionContainer = document.createElement('div');
+            actionContainer.className = 'flex items-center space-x-1 shrink-0';
+
+            if (item.isFolder) {
+                const openFolderBtn = document.createElement('button');
+                openFolderBtn.className = 'px-2.5 py-1 rounded text-xs text-chrome-blue bg-chrome-surface border border-chrome-border hover:bg-chrome-hover flex items-center space-x-1.5 opacity-0 group-hover:opacity-100 transition-opacity';
+                openFolderBtn.title = 'Open folder in new window';
+                openFolderBtn.innerHTML = '<i class="fa-solid fa-window-restore"></i><span class="hidden sm:inline">Open All</span>';
+                
+                openFolderBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    triggerOpenAllLinksFolder(item);
+                };
+                actionContainer.appendChild(openFolderBtn);
+            }
+
+            const actionBtn = document.createElement('button');
+            actionBtn.className = 'w-8 h-8 rounded-full hover:bg-chrome-surface flex items-center justify-center text-chrome-subtext hover:text-chrome-text opacity-0 group-hover:opacity-100 transition-opacity';
+            actionBtn.innerHTML = '<i class="fa-solid fa-ellipsis-vertical"></i>';
+
+            actionBtn.onclick = (e) => {
+                e.stopPropagation();
+                showContextMenu(e, item);
+            };
+
+            actionContainer.appendChild(actionBtn);
+
+            row.appendChild(leftSection);
+            row.appendChild(actionContainer);
+
+            row.onclick = () => {
+                if (item.isFolder) {
+                    selectedFolderId = item.id;
+                    selectedItemIds.clear();
+                    pushHistory(selectedFolderId);
+                    renderApp();
+                } else if (item.url) {
+                    window.open(item.url, '_blank');
+                }
+            };
+
+            return row;
+        }
+
+        function toggleItemSelection(id) {
+            if (selectedItemIds.has(id)) {
+                selectedItemIds.delete(id);
+            } else {
+                selectedItemIds.add(id);
+            }
+            renderMainContent();
+        }
+
+        function updateSelectionBarUI() {
+            const bar = document.getElementById('selectionBar');
+            const countText = document.getElementById('selectedCountText');
+            
+            if (selectedItemIds.size > 0) {
+                bar.classList.remove('hidden');
+                countText.textContent = `${selectedItemIds.size} selected`;
+            } else {
+                bar.classList.add('hidden');
+            }
+        }
+
+        function showContextMenu(e, item) {
+            contextTargetItem = item;
+            const menu = document.getElementById('contextMenu');
+            const openAllBtn = document.getElementById('ctxOpenAllNewWin');
+
+            if (item.isFolder) {
+                openAllBtn.classList.remove('hidden');
+            } else {
+                openAllBtn.classList.add('hidden');
+            }
+
+            menu.style.top = `${e.clientY}px`;
+            menu.style.left = `${e.clientX - 160}px`;
+            menu.classList.remove('hidden');
+        }
+
+        function hideContextMenu() {
+            document.getElementById('contextMenu').classList.add('hidden');
+        }
+
+        function executeOpenFolderLinks(folderItem) {
+            if (!folderItem || !folderItem.isFolder) return;
+
+            const directUrls = (folderItem.children || [])
+                .filter(child => !child.isFolder && child.url)
+                .map(child => child.url);
+
+            if (directUrls.length === 0) {
+                showToast("No direct links found in this folder.", true);
+                return;
+            }
+
+            // Ensure current data is saved so the new window opens with full bookmark state
+            saveToLocalStorage();
+
+            // Opens this HTML file in a BRAND NEW BROWSER WINDOW
+            window.open(
+                window.location.href, 
+                '_blank', 
+                'width=1200,height=800,resizable=yes,scrollbars=yes'
+            );
+
+            // Opens direct bookmark URLs in separate tabs
+            directUrls.forEach(url => {
+                window.open(url, '_blank');
+            });
+
+            showToast(`Opened app in new window & ${directUrls.length} direct links in tabs!`);
+        }
+
+        function triggerOpenAllLinksFolder(folderItem) {
+            actionFolderTarget = folderItem;
+            document.getElementById('popupNoticeModal').classList.remove('hidden');
+        }
+
+        function setupEventListeners() {
+            document.addEventListener('click', () => {
+                hideContextMenu();
+                document.getElementById('topDropdown').classList.add('hidden');
+                document.getElementById('selectHelperDropdown').classList.add('hidden');
+            });
+
+            // Back / Forward Buttons
+            document.getElementById('navBackBtn').addEventListener('click', navigateBack);
+            document.getElementById('navForwardBtn').addEventListener('click', navigateForward);
+
+            // Keyboard Shortcuts for Back / Forward Navigation (Alt + Left / Alt + Right)
+            document.addEventListener('keydown', (e) => {
+                if (e.altKey && e.key === 'ArrowLeft') {
+                    e.preventDefault();
+                    navigateBack();
+                } else if (e.altKey && e.key === 'ArrowRight') {
+                    e.preventDefault();
+                    navigateForward();
+                }
+            });
+
+            document.getElementById('topMenuBtn').addEventListener('click', (e) => {
+                e.stopPropagation();
+                document.getElementById('topDropdown').classList.toggle('hidden');
+            });
+
+            // Convenient Selection Tool Dropdown
+            document.getElementById('selectHelperMenuBtn').addEventListener('click', (e) => {
+                e.stopPropagation();
+                document.getElementById('selectHelperDropdown').classList.toggle('hidden');
+            });
+
+            document.getElementById('selectAllItemsBtn').addEventListener('click', () => {
+                const currentFolder = findItemById(bookmarkData, selectedFolderId);
+                if (currentFolder && currentFolder.children) {
+                    currentFolder.children.forEach(c => selectedItemIds.add(c.id));
+                    renderMainContent();
+                }
+            });
+
+            document.getElementById('selectAllLinksBtn').addEventListener('click', () => {
+                const currentFolder = findItemById(bookmarkData, selectedFolderId);
+                if (currentFolder && currentFolder.children) {
+                    currentFolder.children.forEach(c => {
+                        if (!c.isFolder) selectedItemIds.add(c.id);
+                    });
+                    renderMainContent();
+                }
+            });
+
+            document.getElementById('selectAllFoldersBtn').addEventListener('click', () => {
+                const currentFolder = findItemById(bookmarkData, selectedFolderId);
+                if (currentFolder && currentFolder.children) {
+                    currentFolder.children.forEach(c => {
+                        if (c.isFolder) selectedItemIds.add(c.id);
+                    });
+                    renderMainContent();
+                }
+            });
+
+            document.getElementById('deselectAllBtn').addEventListener('click', () => {
+                selectedItemIds.clear();
+                renderMainContent();
+            });
+
+            document.getElementById('openFolderLinksCustomBtn').addEventListener('click', () => {
+                const currentFolder = findItemById(bookmarkData, selectedFolderId);
+                if (currentFolder) {
+                    triggerOpenAllLinksFolder(currentFolder);
+                }
+            });
+
+            document.getElementById('confirmPopupNoticeBtn').addEventListener('click', () => {
+                document.getElementById('popupNoticeModal').classList.add('hidden');
+                if (actionFolderTarget) {
+                    executeOpenFolderLinks(actionFolderTarget);
+                }
+            });
+
+            document.getElementById('ctxOpenAllNewWin').addEventListener('click', (e) => {
+                e.stopPropagation();
+                hideContextMenu();
+                if (contextTargetItem) {
+                    triggerOpenAllLinksFolder(contextTargetItem);
+                }
+            });
+
+            document.getElementById('ctxEdit').addEventListener('click', (e) => {
+                e.stopPropagation();
+                hideContextMenu();
+                if (contextTargetItem) {
+                    openEditModal(contextTargetItem);
+                }
+            });
+
+            document.getElementById('ctxDelete').addEventListener('click', (e) => {
+                e.stopPropagation();
+                hideContextMenu();
+                if (contextTargetItem) {
+                    deleteItem(contextTargetItem);
+                }
+            });
+
+            document.getElementById('clearSelectionBtn').addEventListener('click', () => {
+                selectedItemIds.clear();
+                renderMainContent();
+            });
+
+            document.getElementById('batchDeleteBtn').addEventListener('click', () => {
+                selectedItemIds.forEach(id => {
+                    const item = findItemById(bookmarkData, id);
+                    if (item) deleteItem(item, false);
+                });
+                selectedItemIds.clear();
+                saveToLocalStorage();
+                renderApp();
+                showToast("Deleted selected items.");
+            });
+
+            document.getElementById('batchOpenSelectedBtn').addEventListener('click', () => {
+                let openedCount = 0;
+                selectedItemIds.forEach(id => {
+                    const item = findItemById(bookmarkData, id);
+                    if (item && !item.isFolder && item.url) {
+                        window.open(item.url, '_blank');
+                        openedCount++;
+                    }
+                });
+                showToast(`Opened ${openedCount} selected link(s).`);
+            });
+
+            // File Upload Event
+            document.getElementById('fileUpload').addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    try {
+                        const parsed = parseBookmarkHTML(event.target.result);
+                        if (parsed.children.length === 0) {
+                            showToast("No valid bookmarks found in file.", true);
+                            return;
+                        }
+                        bookmarkData = parsed;
+                        selectedFolderId = bookmarkData.children[0]?.id || null;
+                        selectedItemIds.clear();
+                        historyStack = [];
+                        historyIndex = -1;
+                        if (selectedFolderId) pushHistory(selectedFolderId);
+                        
+                        saveToLocalStorage();
+                        renderApp();
+                        showToast("Bookmarks HTML successfully imported and saved!");
+                    } catch (err) {
+                        showToast("Failed to parse bookmark file.", true);
+                    }
+                };
+                reader.readAsText(file);
+            });
+
+            document.getElementById('clearDataBtn').addEventListener('click', () => {
+                bookmarkData = null;
+                selectedFolderId = null;
+                searchQuery = '';
+                selectedItemIds.clear();
+                historyStack = [];
+                historyIndex = -1;
+                document.getElementById('searchInput').value = '';
+                localStorage.removeItem(STORAGE_KEY);
+                updateHistoryUI();
+                renderApp();
+                showToast("Cleared all bookmark data.");
+            });
+
+            // Search Handlers
+            const searchInput = document.getElementById('searchInput');
+            const clearSearchBtn = document.getElementById('clearSearchBtn');
+
+            searchInput.addEventListener('input', (e) => {
+                searchQuery = e.target.value;
+                if (searchQuery) {
+                    clearSearchBtn.classList.remove('hidden');
+                } else {
+                    clearSearchBtn.classList.add('hidden');
+                }
+                renderMainContent();
+            });
+
+            clearSearchBtn.addEventListener('click', () => {
+                searchInput.value = '';
+                searchQuery = '';
+                clearSearchBtn.classList.add('hidden');
+                renderMainContent();
+            });
+
+            document.getElementById('cancelEditBtn').addEventListener('click', () => {
+                document.getElementById('editModal').classList.add('hidden');
+            });
+
+            document.getElementById('saveEditBtn').addEventListener('click', () => {
+                if (!contextTargetItem) return;
+                
+                const newName = document.getElementById('editNameInput').value.trim();
+                const newUrl = document.getElementById('editUrlInput').value.trim();
+
+                if (newName) contextTargetItem.title = newName;
+                if (!contextTargetItem.isFolder && newUrl) contextTargetItem.url = newUrl;
+
+                saveToLocalStorage();
+                document.getElementById('editModal').classList.add('hidden');
+                renderApp();
+                showToast("Item saved.");
+            });
+        }
+
+        function openEditModal(item) {
+            document.getElementById('modalTitle').textContent = item.isFolder ? 'Edit Folder' : 'Edit Bookmark';
+            document.getElementById('editNameInput').value = item.title || '';
+            
+            const urlGroup = document.getElementById('urlFieldGroup');
+            if (item.isFolder) {
+                urlGroup.classList.add('hidden');
+            } else {
+                urlGroup.classList.remove('hidden');
+                document.getElementById('editUrlInput').value = item.url || '';
+            }
+
+            document.getElementById('editModal').classList.remove('hidden');
+        }
+
+        function deleteItem(item, shouldRender = true) {
+            const parent = findParentFolder(bookmarkData, item.id);
+            if (parent && parent.children) {
+                parent.children = parent.children.filter(c => c.id !== item.id);
+                saveToLocalStorage();
+                if (shouldRender) {
+                    renderApp();
+                    showToast(`Deleted "${item.title}"`);
+                }
+            }
+        }
+
+        function renderApp() {
+            renderSidebar();
+            renderMainContent();
+        }
+
+        window.onload = function () {
+            setupEventListeners();
+            
+            // Auto-load persisted bookmarks from localStorage across windows
+            const persistedData = loadFromLocalStorage();
+            if (persistedData) {
+                bookmarkData = persistedData;
+                selectedFolderId = bookmarkData.children[0]?.id || null;
+                if (selectedFolderId) pushHistory(selectedFolderId);
+            }
+            
+            renderApp();
+        };
+    </script>
+</body>
+</html>
